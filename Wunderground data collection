@@ -1,0 +1,127 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Jun 30 16:32:37 2020
+
+@author: isabe
+"""
+import os
+import pandas as pd
+import glob
+import numpy as np
+
+
+
+# Set file path, set your own here:
+path = r'C:\Users\isabe\OneDrive\Documents\Msc TCM\zKD workbooks\copies\1 week - Copy'
+# Use glob to open csv's
+all_files = glob.glob(path + "/*.csv")
+
+#Set up a list of dataframes, li
+li = []
+
+# Open files sequentially
+for filename in all_files:
+    df = pd.read_csv(filename, skiprows=3, index_col='Time', header=0, na_values='999')
+    
+    #deleting all nans
+    df.dropna(axis=0, how='all', inplace=True)
+    df.fillna('nan')
+    
+    # =============================================================================
+    # # Convert columns to float without text
+    # =============================================================================
+    #deleting last two characters in the temp collumn
+    df['Temperature_C'] = df['Temperature'].map(lambda x: str(x)[:-2])
+    
+    df['Temperature_C'] = df['Temperature_C'].astype(float)
+    
+    df['Wind_Speed_mph'] = df['Wind Speed']
+    
+    df['Wind_Speed_mph'] = df.Wind_Speed_mph.str.extract('(\d+)')
+    
+    df['Wind_Speed_mph'] = df['Wind_Speed_mph'].astype(float)
+    
+    df['Wind'] = df['Wind'].astype(str)
+    
+    # replacing thounsands comma with NOTHING
+    df['Pressure'] = df['Pressure'].replace({',':''}, regex=True)
+    #extra bit needed if theres a decimal point
+    df['Pressure_in'] = df.Pressure.str.extract('(\d+\.\d+)')
+    
+    df['Pressure_in'] = df['Pressure_in'].astype(float)
+    #convert column into a string
+    df['Condition'] = df['Condition'].astype(str)
+    
+    df = df.replace(0, np.nan)
+    
+
+    
+    # =============================================================================
+    # # Mafs n stuff
+    # =============================================================================
+    
+    
+    maxtemp = df['Temperature_C'].max(axis=0)
+    
+    mintemp = df['Temperature_C'].min(axis=0)
+    
+    tempmean = df['Temperature_C'].mean(axis=0)
+    
+    maxwind = df['Wind_Speed_mph'].max(axis=0)
+    
+    minwind = df['Wind_Speed_mph'].min(axis=0)
+    
+    windmean = df['Wind_Speed_mph'].mean(axis=0)
+    
+    # found on stackoverflow df.name.mode()
+    # Wind with capital letter
+    # .iloc so it selects the first in the series in case there are two modes
+    windmode = df.Wind.mode().iloc[0]
+    
+    
+    pressuremax = df['Pressure_in'].max(axis=0)
+#    
+    pressuremin = df['Pressure_in'].min(axis=0)
+#    
+    preassuremean = df['Pressure_in'].mean(axis=0)
+#    
+    # find most common condition , the mode
+    conditionmode = df.Condition.mode().iloc[0]
+#    
+    #rain = df.Condition.count('Rain')
+    condition = df['Condition'].value_counts()
+    # find the word in the dataframe collumn
+    rain = df['Condition'].str.contains("Rain")
+    # sum up amount of times it contains the word
+    rain2 = rain.sum() 
+    # if has rain 1 or more times is true (or false)
+    rainfall = rain2>=1
+#    
+    
+    
+    
+    
+    # =============================================================================
+    # # making dataframe
+    # =============================================================================
+    filename2 = filename[77:-4]
+    
+    weather = pd.DataFrame({'Patient' : [filename2], 'Temp_mean': [tempmean], 'Temp_max' : [maxtemp], 'Temp_min' : [mintemp], 'Wind_mean': [windmean], 'Wind_max' : [maxwind], 'Wind_min' : [minwind], 'Wind_direct' : [windmode], 'Press_mean' : [preassuremean], 'Press_max' : [pressuremax], 'Press_min' : [pressuremin], 'Rainfall' : [rainfall], 'Conditions' : [conditionmode]})
+    
+    #END OF CODE
+    
+    # Add df to list li
+    # adds df called weather to the list of files
+    li.append(weather)
+    
+    
+    
+ # Convert li into 1 dataframe, frame   
+frame = pd.concat(li, axis=0, ignore_index=True)
+# convert the index collumn into the filename , which was added as a new column in weather 
+frame.set_index('Patient', inplace=True)
+
+filename2 = filename[77:-4]
+#export csv
+file_name = '1_week.csv'
+frame.to_csv(file_name)
