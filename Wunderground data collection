@@ -12,7 +12,7 @@ import numpy as np
 
 
 # Set file path, set your own here:
-path = r'C:\Users\isabe\OneDrive\Documents\Msc TCM\zKD workbooks\copies\1 week - Copy'
+path = r'C:\
 # Use glob to open csv's
 all_files = glob.glob(path + "/*.csv")
 
